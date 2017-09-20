@@ -35,3 +35,16 @@ def generate_x_y(random_seed=1104):
                       columns=['X1', 'X2', 'X3', 'y'])
 
     return df, X, y
+
+def array_print(array):
+    '''
+    `array` is 2 dimensional
+    '''
+    assert array.ndim == 2
+    print("The array:\n", 
+          np.round(array, 2))
+    print("The dimensions are", 
+          array.shape[0], 
+          "rows by",
+          array.shape[1],
+          "columns")
