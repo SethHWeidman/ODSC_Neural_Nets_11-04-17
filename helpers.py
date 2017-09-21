@@ -43,8 +43,18 @@ def array_print(array):
     assert array.ndim == 2
     print("The array:\n", 
           np.round(array, 2))
+    text_lookup = {"rows": {"one": "row", "other": "rows"}, "columns": {"one": "column", "other": "columns"}} 
+    if array.shape[0] == 1:
+        rows_text = text_lookup['rows']['one']
+    else:
+        rows_text = text_lookup['rows']['other']
+    if array.shape[1] == 1:
+        columns_text = text_lookup['columns']['one']
+    else:
+        columns_text = text_lookup['columns']['other']
     print("The dimensions are", 
           array.shape[0], 
-          "rows by",
+          rows_text,
+          "and",
           array.shape[1],
-          "columns")
+          columns_text)
