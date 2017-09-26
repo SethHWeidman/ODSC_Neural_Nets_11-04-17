@@ -36,13 +36,13 @@ def generate_x_y(random_seed=1104):
 
     return df, X, y
 
-def array_print(array):
+def array_print(array, round_num=2):
     '''
     `array` is 2 dimensional
     '''
     assert array.ndim == 2
     print("The array:\n", 
-          np.round(array, 2))
+          np.round(array, round_num))
     text_lookup = {"rows": {"one": "row", "other": "rows"}, "columns": {"one": "column", "other": "columns"}} 
     if array.shape[0] == 1:
         rows_text = text_lookup['rows']['one']
