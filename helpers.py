@@ -58,3 +58,8 @@ def array_print(array, round_num=2):
           "and",
           array.shape[1],
           columns_text)
+    
+def df_print(df, round_num=2):
+    print(np.round(df, 2))
+   
+ 
