@@ -59,7 +59,170 @@ def array_print(array, round_num=2):
           array.shape[1],
           columns_text)
     
+
 def df_print(df, round_num=2):
     print(np.round(df, 2))
-   
- 
+
+    
+def target_to_y(target):
+    Y = np.zeros((len(target), 10))
+    for i in range(len(target)):
+        Y[i][int(target[i])] = 1
+    return Y
+
+
+def data_to_x(data):
+    X = (data - data.min()) * 1.0 / (data.max() - data.min())
+    return X
+
+
+def get_mnist_X_Y(mnist):
+    data = mnist.data
+    target = mnist.target
+    X = data_to_x(data)
+    Y = target_to_y(target)
+    return X, Y
+
+###
+### Neural net functions
+###
+
+def initialize_weights(num_in=3, num_hidden=4, num_out=1):
+    '''
+    Randomly initializes weights
+    '''
+    np.random.seed(1104)
+    V = np.random.randn(num_in, num_hidden)
+    W = np.random.randn(num_hidden, num_out)
+    return V, W
+
+
+def shuffle_x_y(X, Y):
+    '''
+    Each array must be two dimensional
+    '''
+    np.random.seed(1104)
+    train_size = X.shape[0]
+    indices = list(range(train_size))
+    np.random.shuffle(indices)
+    return X[indices], Y[indices]
+
+
+def sigmoid(x):
+    return 1.0/(1.0+np.exp(-x))
+
+
+def learn(V, W, x_batch, y_batch):
+    # forward pass
+    A = np.dot(x_batch,V)
+    B = sigmoid(A)
+    C = np.dot(B,W)
+    P = sigmoid(C)
+    
+    # loss
+    L = 0.5 * (y_batch - P) ** 2
+    
+    # backpropogation
+    dLdP = -1.0 * (y_batch - P)
+    dPdC = sigmoid(C) * (1-sigmoid(C))
+    dLdC = dLdP * dPdC
+    dCdW = B.T
+    dLdW = np.dot(dCdW, dLdC)
+    dCdB = W.T
+    dBdA = sigmoid(A) * (1-sigmoid(A))
+    dAdV = x_batch.T
+    dLdV = np.dot(dAdV, np.dot(dLdP * dPdC, dCdB) * dBdA)
+    
+    # update the weights
+    W -= dLdW
+    V -= dLdV
+    
+    return V, W
+
+
+def one_epoch(X, Y, V, W):
+    '''
+    Run one epoch an element at a time through the net.
+    '''
+    for index in range(X.shape[0]):
+        x_batch = np.array(X[index], ndmin=2)
+        y_batch = np.array(Y[index], ndmin=2)
+        learn(V, W, x_batch, y_batch)
+    return V, W
+
+
+def predict(x_batch, V, W):
+    '''
+    Make a prediction given a batch of observations and the weights.
+    '''
+    A = np.dot(x_batch, V)
+    B = sigmoid(A)
+    C = np.dot(B, W)
+    P = sigmoid(C)
+    return P
+
+
+def loss(prediction, actual, print_loss=False):
+    '''
+    Calculate the loss as mean squared error.
+    '''
+    return np.mean((prediction - actual) ** 2) * actual.shape[1]
+
+
+def train(X, Y, V, W, epochs=100):
+    '''
+    Train the net for a number of epochs.
+    '''
+    losses = []
+    epochs_list = []
+    for i in range(epochs+1):
+        V, W = one_epoch(X, Y, V, W)
+        if i % (epochs / 10) == 0:
+            preds = predict(X, V, W)
+            loss_epoch = loss(preds, Y)
+            epochs_list.append(i)
+            losses.append(loss_epoch)
+    return pd.DataFrame({'epoch' : epochs_list, 
+                         'loss' : losses})
+
+
+def train_and_display(X, Y, num_epochs=1000, num_hidden=8):
+    X, Y = shuffle_x_y(X, Y)
+    V, W = initialize_weights(num_in=X.shape[1], 
+                              num_hidden=num_hidden, 
+                              num_out=Y.shape[1])
+    df = train(X, Y, V, W, num_epochs)
+    df_print(df)
+    return V, W
+
+
+def accuracy_binary(X, Y, V, W):
+    
+    def _df_actual_predicted(X, Y, V, W):
+        return pd.DataFrame(np.round(np.concatenate([Y, predict(X, V, W)], axis=1), 2),
+                            columns=["Actual", "Predicted"])
+
+    df = _df_actual_predicted(X, Y, V, W)
+    print("The data frame of the predictions this neural net produces is:\n",
+          df)
+    df['Prediction'] = df['Predicted'] > 0.5
+
+    def _correct_prediction(row):
+        return bool(row['Actual']) == row['Prediction']
+    
+    df['Correct'] = df.apply(lambda x: _correct_prediction(x), axis=1)
+        
+    print("The accuracy of this trained neural net is", 
+          df['Correct'].sum() / len(df['Correct']))
+    
+    return df['Correct'].sum() / len(df['Correct'])
+
+
+def accuracy_multiclass(X, Y, V, W):
+    predictions = predict(X, V, W)
+
+    preds = [np.argmax(x) for x in predictions]
+    actuals = [np.argmax(x) for x in Y]
+    accuracy = sum(np.array(preds) == np.array(actuals)) * 1.0 / len(preds)
+    return accuracy
+
