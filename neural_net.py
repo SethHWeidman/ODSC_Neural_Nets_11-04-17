@@ -29,7 +29,7 @@ def shuffle_data(X_train, Y_train):
 
 
 
-def accuracy(net, X_test, Y_test):
+def net_accuracy(net, X_test, Y_test):
     P = net.forwardpass(X_test)
     preds = [np.argmax(x) for x in P]
     actuals = [np.argmax(x) for x in Y_test]
